@@ -11,7 +11,7 @@ set -u
 
 fresh() { # → a physical temp HOME with a fresh kit copy at $H/brain (git repo, no skeleton)
   H="$(new_home)"; B="$H/brain"; mkdir -p "$B"
-  (cd "$KIT" && tar cf - --exclude='tests/__pycache__' --exclude='compiler/__pycache__' --exclude='kit/__pycache__' .) | (cd "$B" && tar xf -)
+  copy_kit "$B"
   g -C "$B" init -q
 }
 inst() { ( cd "$B" && HOME="$H" bash install.sh "$@" ) >"$H/install.out" 2>&1; echo $?; }
@@ -127,7 +127,7 @@ rm -rf "$H"
 
 # --- a brain path with a space: the registered command must still run
 H="$(new_home)"; B="$H/My Brain"; mkdir -p "$B"
-(cd "$KIT" && tar cf - --exclude='tests/__pycache__' --exclude='compiler/__pycache__' --exclude='kit/__pycache__' .) | (cd "$B" && tar xf -)
+copy_kit "$B"
 g -C "$B" init -q
 rc="$(inst --name Atlas --org Acme)"
 [ "$rc" -eq 0 ] && grep -q "smoke test passed" "$H/install.out" \

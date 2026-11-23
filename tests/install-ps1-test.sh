@@ -17,7 +17,7 @@ if [ -z "$PWSH" ]; then echo "SKIP install.ps1 tests — no pwsh on this machine
 ps1() { "$PWSH" -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "$@"; }
 
 H="$(new_home)"; B="$H/brain"; mkdir -p "$B"
-(cd "$KIT" && tar cf - --exclude='tests/__pycache__' --exclude='compiler/__pycache__' --exclude='kit/__pycache__' .) | (cd "$B" && tar xf -)
+copy_kit "$B"
 g -C "$B" init -q
 
 out="$(HOME="$H" ps1 "$B/install.ps1" -CheckOnly 2>&1)"; rc=$?

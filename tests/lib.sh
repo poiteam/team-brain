@@ -52,5 +52,12 @@ EOF
   printf -- '---\nauthor: mert\ndate: %s\nsession: bbbb2222\nrelated: [web-app, search-worker]\n---\n\n## Done\n- y\n' "$today" > "$b/daily/$today-mert-bbbb2222.md"
 }
 
+# copy_kit <dir> — the kit's files into <dir>, WITHOUT .git or caches. The kit repo
+# is itself a git checkout with an origin remote (kit-ci): copying .git would hand
+# every fixture brain that remote and that history.
+copy_kit() {
+  (cd "$KIT" && tar cf - --exclude=./.git --exclude='*/__pycache__' .) | (cd "$1" && tar xf -)
+}
+
 # new_home — a physical temp dir (macOS /var → /private/var), printed.
 new_home() { local h; h="$(mktemp -d)"; (cd "$h" && pwd -P); }

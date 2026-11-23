@@ -11,7 +11,7 @@ set -u
 
 setup() { # [brain dir name] → $H, $B, stubs, env
   H="$(new_home)"; B="$H/${1:-brain}"; mkdir -p "$B" "$H/stub" "$H/LaunchAgents"
-  (cd "$KIT" && tar cf - --exclude='tests/__pycache__' --exclude='compiler/__pycache__' --exclude='kit/__pycache__' .) | (cd "$B" && tar xf -)
+  copy_kit "$B"
   printf 'NAME=Atlas\nORG=Acme\n' > "$B/brain.conf"
   printf '#!/bin/sh\necho "$*" >> "%s/launchctl.log"\n' "$H" > "$H/stub/launchctl"
   cat > "$H/stub/crontab" <<STUB

@@ -15,7 +15,7 @@ SYS_PATH="$SYS_PATH:/usr/bin:/bin"
 
 setup() { # → $H, $B (initialised + hooked brain), $STUB (stub bin dir with claude)
   H="$(new_home)"; B="$H/brain"; STUB="$H/stub"; mkdir -p "$B" "$STUB"
-  (cd "$KIT" && tar cf - --exclude='tests/__pycache__' --exclude='compiler/__pycache__' --exclude='kit/__pycache__' .) | (cd "$B" && tar xf -)
+  copy_kit "$B"
   g -C "$B" init -q
   ( cd "$B" && HOME="$H" bash install.sh --name Atlas --org Acme ) >/dev/null 2>&1
   printf '#!/bin/sh\necho OK\n' > "$STUB/claude"; chmod +x "$STUB/claude"

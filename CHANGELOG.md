@@ -3,6 +3,13 @@
 Versions follow semver. A change to a content contract (docs/kit/contracts.md)
 is a major version and lists the manual steps to convert your content.
 
+## 0.1.1 — 2026-11-23
+
+- Tests no longer copy the kit's `.git` into their fixture brains: inside a git
+  checkout with an `origin` remote (this repository's own CI) `doctor-test`
+  found that remote and failed. No change to the kit's behaviour.
+- The release pipeline runs the kit's tests inside such a checkout.
+
 ## 0.1.0 — 2026-11-23
 
 First public release, extracted from the brain Poilabs runs in production.

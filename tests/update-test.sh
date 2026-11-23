@@ -14,7 +14,7 @@ set -u
 # commits kit/VERSION=<ver> (+ an optional appended line) with a fresh kit.manifest, tags v<ver>.
 make_upstream() {
   mkdir -p "$1"
-  (cd "$KIT" && tar cf - --exclude='tests/__pycache__' --exclude='compiler/__pycache__' --exclude='kit/__pycache__' .) | (cd "$1" && tar xf -)
+  copy_kit "$1"
   rm -f "$1/kit.manifest"
   g -C "$1" init -q
 }
