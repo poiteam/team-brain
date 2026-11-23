@@ -1,0 +1,43 @@
+name: brain-locked-guard
+# locked/ holds the decisions the brain rests on: the compiler may never change it,
+# not even in a PR (locked/decisions.md D2). Humans change it in their own PRs.
+
+# pull_request_target: GitHub runs THIS file from the base branch, so a PR cannot
+# rewrite the guard. It never executes the PR's code: it only reads git history.
+on:
+  pull_request_target:
+
+permissions:
+  contents: read
+
+jobs:
+  guard:
+    if: github.repository != 'poiteam/team-brain'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0   # the BASE branch; the PR's files never land in the workspace
+      - name: Fetch the PR as a ref (read by git, never checked out or run)
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: git fetch --no-tags origin "+refs/pull/$PR_NUMBER/head:refs/remotes/pr/head"
+      - name: Compiler PRs do not touch locked/
+        env:
+          BASE_REF: ${{ github.base_ref }}
+          HEAD_REF: ${{ github.head_ref }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+        run: |
+          set -u
+          changed="$(git diff --name-only "origin/$BASE_REF"...pr/head -- locked/)"
+          [ -n "$changed" ] || { echo "locked/ untouched"; exit 0; }
+          compiler=0
+          case "$HEAD_REF" in compiler/*) compiler=1 ;; esac
+          case "$PR_TITLE" in "compiler:"*) compiler=1 ;; esac
+          if [ "$compiler" -eq 1 ]; then
+            echo "::error::a compiler PR changed locked/ — not allowed:" >&2
+            echo "$changed" >&2
+            exit 1
+          fi
+          echo "locked/ changed by a human PR — review it as a decision change:"
+          echo "$changed"

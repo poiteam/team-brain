@@ -1,0 +1,58 @@
+#!/usr/bin/env bash
+# Pre-push fail-closed secret scan.
+# Scans the COMMITTED content of every file changed in the range being pushed —
+# not the working tree: what leaves the machine is the blob, so fixing a file
+# locally does not unblock a push whose commits still carry the secret.
+# No path is exempt; the kit's own scanner tests assemble fixtures at runtime.
+set -u
+
+repo_root="$(git rev-parse --show-toplevel)"
+scanner="$repo_root/hooks/scan-secrets.sh"
+zero='0000000000000000000000000000000000000000'
+fail=0
+
+while read -r local_ref local_sha remote_ref remote_sha; do
+  [ "$local_sha" = "$zero" ] && continue  # branch deletion — nothing to scan
+
+  if [ "$remote_sha" = "$zero" ]; then
+    # New branch: scan what it adds on top of origin/main (or everything if unrelated).
+    base="$(git merge-base origin/main "$local_sha" 2>/dev/null || true)"
+    if [ -n "$base" ] && [ "$base" != "$local_sha" ]; then
+      files="$(git diff --name-only --diff-filter=ACMR "$base" "$local_sha")"
+    else
+      files="$(git ls-tree -r --name-only "$local_sha")"
+    fi
+  else
+    files="$(git diff --name-only --diff-filter=ACMR "$remote_sha" "$local_sha")"
+  fi
+
+  [ -n "$files" ] || continue
+
+  tmpdir="$(mktemp -d)"
+  trap 'rm -rf "$tmpdir"' EXIT
+  scanlist=()
+  while IFS= read -r f; do
+    [ -n "$f" ] || continue
+    mkdir -p "$tmpdir/$(dirname "$f")"
+    if ! git show "$local_sha:$f" > "$tmpdir/$f" 2>/dev/null; then
+      echo "pre-push: cannot read $f from the commit — fail-closed, push stopped." >&2
+      fail=1
+      continue
+    fi
+    scanlist+=("$f")
+  done <<< "$files"
+
+  if [ "${#scanlist[@]}" -gt 0 ]; then
+    if ! (cd "$tmpdir" && bash "$scanner" "${scanlist[@]}"); then
+      fail=1
+    fi
+  fi
+  rm -rf "$tmpdir"
+  trap - EXIT
+done
+
+if [ "$fail" -ne 0 ]; then
+  echo "pre-push: secret finding — push REJECTED. Remove it from the commits (not just the working tree) and retry." >&2
+  exit 1
+fi
+exit 0

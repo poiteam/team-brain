@@ -1,0 +1,16 @@
+# Copy to brain.conf at the root of your brain repo.
+# Plain KEY=value lines — this file is READ, never sourced (it cannot run code).
+
+# The brain's name and whose brain it is: "=== NAME — ORG shared brain ===".
+NAME=Brain
+ORG=Your team
+
+# Branch that dailies are committed to directly.
+DEFAULT_BRANCH=main
+
+# Session-start context budget in bytes (the hook never prints more).
+START_BUDGET=8000
+
+# Version of the content contract your cards, dailies and INDEX follow
+# (docs/kit/contracts.md). `install.sh doctor` compares it with kit/CONTRACT.
+CONTRACT_VERSION=1

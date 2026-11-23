@@ -1,0 +1,39 @@
+name: kit-ci
+# The kit's own tests, on the three platforms the kit supports. Runs ONLY in the kit
+# repo: "Use this template" copies this file into every team's repo, where a 3-OS
+# matrix would spend the team's Actions minutes on tests of code they did not change.
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    if: github.repository == 'poiteam/team-brain'
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: "3.12"
+      - name: python3 on Windows (the runner ships python.exe only)
+        if: runner.os == 'Windows'
+        run: |
+          mkdir -p "$HOME/shim"
+          printf '#!/bin/sh\nexec python "$@"\n' > "$HOME/shim/python3"
+          chmod +x "$HOME/shim/python3"
+          cygpath -w "$HOME/shim" >> "$GITHUB_PATH"
+      - name: Kit tests
+        run: bash tests/run-all.sh
+      - name: kit.manifest matches the files
+        run: python3 kit/manifest.py check --root . kit.manifest

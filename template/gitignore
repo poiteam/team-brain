@@ -1,0 +1,5 @@
+# brain: local, per-machine files
+hooks/*.local.txt
+.compiler.log
+__pycache__/
+.brain-kit/backup/

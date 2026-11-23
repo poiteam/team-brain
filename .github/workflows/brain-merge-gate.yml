@@ -1,0 +1,53 @@
+name: brain-merge-gate
+# May a compiler PR merge without a human? Green = only new-knowledge surfaces and
+# lines appended under a card's Known traps / Archive. The gate is run from the BASE
+# branch, so a PR that edits compiler/merge_gate.py cannot loosen its own gate.
+# Rule: compiler/merge_gate.py · procedure: compiler/COMPILER.md step 9.
+# Human PRs pass: the gate only judges what the compiler may merge alone.
+
+# pull_request_target: GitHub runs THIS file from the base branch, so a PR cannot
+# rewrite the gate. It never executes the PR's code: it only reads git history.
+on:
+  pull_request_target:
+
+permissions:
+  contents: read
+
+jobs:
+  gate:
+    if: github.repository != 'poiteam/team-brain'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0   # the BASE branch; the PR's files never land in the workspace
+      - name: Fetch the PR as a ref (read by git, never checked out or run)
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: git fetch --no-tags origin "+refs/pull/$PR_NUMBER/head:refs/remotes/pr/head"
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: "3.12"
+      - name: Auto-merge eligibility
+        env:
+          BASE_REF: ${{ github.base_ref }}
+          HEAD_REF: ${{ github.head_ref }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+        run: |
+          set -u
+          compiler=0
+          case "$HEAD_REF" in compiler/*) compiler=1 ;; esac
+          case "$PR_TITLE" in "compiler:"*) compiler=1 ;; esac
+          if [ "$compiler" -eq 0 ]; then
+            echo "not a compiler PR — the gate does not apply"
+            exit 0
+          fi
+          gate="$RUNNER_TEMP/merge_gate.py"
+          if ! git show "origin/$BASE_REF:compiler/merge_gate.py" > "$gate"; then
+            echo "::error::no compiler/merge_gate.py on the base branch — a human must review this PR" >&2
+            exit 1
+          fi
+          if ! python3 "$gate" --base "origin/$BASE_REF" --head pr/head; then
+            echo "::error::this compiler PR needs a human (details above)" >&2
+            exit 1
+          fi

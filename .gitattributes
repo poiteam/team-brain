@@ -1,0 +1,13 @@
+# Scripts must stay LF on every platform: Git Bash chokes on CRLF.
+*.sh text eol=lf
+hooks/pre-push text eol=lf
+*.py text eol=lf
+*.md text eol=lf
+*.yml text eol=lf
+kit/VERSION text eol=lf
+kit/CONTRACT text eol=lf
+kit/UPSTREAM text eol=lf
+brain.conf text eol=lf
+brain.conf.example text eol=lf
+template/** text eol=lf
+*.ps1 text
